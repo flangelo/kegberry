@@ -1,0 +1,46 @@
+[Unit]
+Description=Kegbot Chromium Kiosk
+After=graphical.target network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+User=_KIOSK_USER_
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/_KIOSK_USER_/.Xauthority
+
+# Wait until Kegbot web UI responds
+ExecStartPre=/bin/bash -c 'until curl -fs http://kegberry:8000/fullscreen-realtime/ > /dev/null; do echo "Waiting for Kegbot..."; sleep 2; done'
+
+# Small extra delay so UI/assets are fully ready
+ExecStartPre=/bin/sleep 5
+
+# Wipe the temp profile so Chromium always starts clean (no crash-restore)
+ExecStartPre=/bin/bash -c 'rm -rf /tmp/chromium-kiosk && mkdir -p /tmp/chromium-kiosk'
+
+ExecStart=/usr/bin/chromium \
+  --kiosk \
+  --start-fullscreen \
+  --noerrdialogs \
+  --disable-infobars \
+  --disable-session-crashed-bubble \
+  --disable-restore-session-state \
+  --disable-features=TranslateUI \
+  --disable-pinch \
+  --overscroll-history-navigation=0 \
+  --check-for-update-interval=31536000 \
+  --disk-cache-size=1 \
+  --media-cache-size=1 \
+  --disable-application-cache \
+  --no-first-run \
+  --no-default-browser-check \
+  --user-data-dir=/tmp/chromium-kiosk \
+  http://localhost:8000/fullscreen-realtime/
+
+Restart=always
+RestartSec=5
+
+KillSignal=SIGINT
+TimeoutStopSec=10
+
+[Install]
+WantedBy=graphical.target

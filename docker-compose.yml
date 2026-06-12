@@ -1,0 +1,145 @@
+services:
+  kegbot:
+    image: ghcr.io/flangelo/kegbot-server:latest
+    restart: unless-stopped
+    entrypoint: /docker-entrypoint.sh
+    expose:
+      - "8000"
+    volumes:
+      - /home/kegbot/kegbot-data:/kegbot-data
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: mysql://kegbot:kegbot@mysql/kegbot
+      KEGBOT_ENV: production
+      KEGBOT_SECRET_KEY: ${KEGBOT_SECRET_KEY}
+      KEGBOT_SITE_URL: http://kegberry:8000
+      KEGBOT_MEDIA_URL: /media/
+      KEGBOT_INSECURE_SHARED_API_KEY: ${KEGBOT_API_KEY}
+    depends_on:
+      mysql:
+        condition: service_started
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/fullscreen/', timeout=5)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  kegnet-listener:
+    image: ghcr.io/flangelo/kegbot-server:latest
+    restart: unless-stopped
+    command: run_kegnet_listener
+    volumes:
+      - /home/kegbot/kegbot-data:/kegbot-data
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: mysql://kegbot:kegbot@mysql/kegbot
+      KEGBOT_ENV: production
+      KEGBOT_SECRET_KEY: ${KEGBOT_SECRET_KEY}
+    depends_on:
+      kegbot:
+        condition: service_healthy
+
+  workers:
+    image: ghcr.io/flangelo/kegbot-server:latest
+    restart: unless-stopped
+    command: rqworker default stats
+    volumes:
+      - /home/kegbot/kegbot-data:/kegbot-data
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: mysql://kegbot:kegbot@mysql/kegbot
+      KEGBOT_ENV: production
+      KEGBOT_SECRET_KEY: ${KEGBOT_SECRET_KEY}
+    depends_on:
+      mysql:
+        condition: service_started
+      redis:
+        condition: service_started
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    user: "0:0"
+    ports:
+      - "8000:80"
+    volumes:
+      - /home/kegbot/kegbot-data/media:/media:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - kegbot
+
+  mysql:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: kegbot
+      MARIADB_DATABASE: kegbot
+      MARIADB_USER: kegbot
+      MARIADB_PASSWORD: kegbot
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  redis:
+    image: redis:7.2-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+
+  pycore:
+    image: ghcr.io/flangelo/kegbot-pycore:latest
+    restart: unless-stopped
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    environment:
+      KEGBOT_REDIS_URL: redis://redis:6379/0
+      KEGBOT_API_KEY: ${KEGBOT_API_KEY}
+      KEGBOT_API_URL: 'http://kegbot:8000/api/'
+    depends_on:
+      kegbot:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  kegboard:
+    image: ghcr.io/flangelo/kegbot-pycore:latest
+    restart: unless-stopped
+    privileged: true
+    command: >
+      sh -c "
+      echo 'Waiting for pycore to be running...';
+      until pgrep -f pycore >/dev/null 2>&1 || wget -qO- http://kegbot:8000/fullscreen/ >/dev/null 2>&1; do
+        echo 'pycore/Kegbot not ready yet...';
+        sleep 2;
+      done;
+      echo 'Waiting for USB device...';
+      while [ ! -e /dev/ttyACM0 ]; do
+        sleep 1;
+      done;
+
+      echo 'Sending Arduino reset signal...';
+      stty -F /dev/ttyACM0 1200 || true;
+      sleep 5;
+
+      echo 'Starting kegboard daemon...';
+      exec bin/kegboard_daemon.py --kegboard_device=/dev/ttyACM0
+      "
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    environment:
+      KEGBOT_REDIS_URL: redis://redis:6379/0
+    devices:
+      - ${KEGBOARD_DEVICE:-/dev/ttyACM0}:/dev/ttyACM0
+      - /dev/bus/usb:/dev/bus/usb
+    depends_on:
+      pycore:
+        condition: service_started
+      redis:
+        condition: service_started
+
+volumes:
+  mysql-data:
