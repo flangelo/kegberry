@@ -72,7 +72,7 @@ services:
       - kegbot
 
   mysql:
-    image: mariadb:10.11
+    build: ./db
     restart: unless-stopped
     environment:
       MARIADB_ROOT_PASSWORD: kegbot

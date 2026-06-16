@@ -1,7 +1,6 @@
-FROM yobasystems/alpine-mariadb:latest
+FROM mariadb:10.11
 
-RUN apk add tzdata
-COPY . /scripts
-RUN chmod -R 755 /scripts
+RUN apt-get update && apt-get install -y --no-install-recommends tzdata && rm -rf /var/lib/apt/lists/*
 
-ENTRYPOINT ["/scripts/entrypoint.sh"]
+COPY init_tzdata.sh /docker-entrypoint-initdb.d/init_tzdata.sh
+RUN chmod +x /docker-entrypoint-initdb.d/init_tzdata.sh
