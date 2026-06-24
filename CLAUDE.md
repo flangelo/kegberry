@@ -73,6 +73,18 @@ docker exec kegberry-mysql-1 bash -c "mysql_tzinfo_to_sql /usr/share/zoneinfo | 
 - Chromium uses a throwaway profile in `/tmp/chromium-kiosk` so it always starts clean
 - Do **not** run Chromium on the Pi outside this service — it triggers a GNOME keyring popup that hangs the UI
 
+### Kiosk watchdog (nightly restart)
+`Restart=always` on the kiosk only catches Chromium *exiting*; a renderer that
+is alive but **frozen** (e.g. after slowly filling the `--js-flags=--max-old-space-size=96`
+heap cap) looks healthy to systemd and the screen wedges. `kegbot-kiosk-restart.timer`
++ `kegbot-kiosk-restart.service` restart the kiosk nightly at **05:00 local** to
+clear this out (`systemctl try-restart`, so a deliberately stopped kiosk is left alone).
+
+- Installed/enabled by `install.sh` (`setup_kiosk_watchdog`)
+- Change the schedule by editing `OnCalendar` in `kegbot-kiosk-restart.timer`, then `sudo systemctl daemon-reload`
+- Inspect: `systemctl list-timers kegbot-kiosk-restart.timer`; force a test run: `sudo systemctl start kegbot-kiosk-restart.service`
+- This is a coarse safety net; for true freeze-detection see the heartbeat/CDP options discussed but not chosen.
+
 ## Fresh Pi install
 ```bash
 curl -sSL https://raw.githubusercontent.com/flangelo/kegberry/master/install.sh | bash

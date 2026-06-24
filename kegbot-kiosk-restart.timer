@@ -1,0 +1,15 @@
+[Unit]
+Description=Nightly restart of the Kegbot kiosk (prevents long-run renderer freezes)
+
+[Timer]
+# Restart the kiosk every night at 05:00 local time. Pick an hour the bar is
+# closed; change this line and `sudo systemctl daemon-reload` to adjust.
+OnCalendar=*-*-* 05:00:00
+# A missed run (Pi powered off at 05:00) is skipped rather than fired on the
+# next boot, so the kiosk never restarts unexpectedly mid-service.
+Persistent=false
+# Smear slightly in case other timers share the slot.
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

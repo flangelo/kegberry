@@ -170,6 +170,24 @@ setup_kiosk_service() {
     log "Kiosk service installed and enabled. It starts automatically with the graphical session."
 }
 
+# ── Kiosk nightly-restart watchdog ────────────────────────────────────────────
+setup_kiosk_watchdog() {
+    local svc_src="${KEGBERRY_DIR}/kegbot-kiosk-restart.service"
+    local timer_src="${KEGBERRY_DIR}/kegbot-kiosk-restart.timer"
+
+    if [[ ! -f "${svc_src}" || ! -f "${timer_src}" ]]; then
+        warn "kiosk-restart units not found in ${KEGBERRY_DIR} — skipping kiosk watchdog."
+        return
+    fi
+
+    log "Installing kiosk nightly-restart watchdog ..."
+    sudo cp "${svc_src}"   /etc/systemd/system/kegbot-kiosk-restart.service
+    sudo cp "${timer_src}" /etc/systemd/system/kegbot-kiosk-restart.timer
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now kegbot-kiosk-restart.timer
+    log "Kiosk watchdog timer enabled (nightly restart). Check it with: systemctl list-timers kegbot-kiosk-restart.timer"
+}
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 main() {
     check_distro
@@ -182,6 +200,7 @@ main() {
     pull_images
     start_services
     setup_kiosk_service
+    setup_kiosk_watchdog
 
     echo ""
     log "Install complete!"

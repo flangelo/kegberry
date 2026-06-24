@@ -1,0 +1,12 @@
+[Unit]
+Description=Restart the Kegbot Chromium kiosk (scheduled watchdog)
+# The kiosk's own Restart=always only catches Chromium *exiting*. A renderer
+# that is alive but frozen (e.g. after slowly filling the 96 MB JS heap cap)
+# looks healthy to systemd, so this timer-driven restart clears it out.
+After=kegbot-kiosk.service
+
+[Service]
+Type=oneshot
+# try-restart is a no-op if the kiosk isn't running, so a deliberately stopped
+# kiosk (e.g. during maintenance) is not resurrected.
+ExecStart=/bin/systemctl try-restart kegbot-kiosk.service

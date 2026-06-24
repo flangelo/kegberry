@@ -34,6 +34,10 @@ ExecStart=/usr/bin/chromium \
   --no-first-run \
   --no-default-browser-check \
   --user-data-dir=/tmp/chromium-kiosk \
+  --disable-gpu \
+  --disable-sync \
+  --disable-background-networking \
+  --js-flags="--max-old-space-size=96" \
   http://localhost:8000/fullscreen-realtime/
 
 Restart=always
