@@ -3,6 +3,22 @@
 You've got a Raspberry Pi and you love beer on tap.  Now what? *Make it a
 Kegberry*.
 
+I have made some changes and improvements to the services which includes:
+ * No need for the old Android app - enhanced web UI for a real time web UI configured to run in Kiosk mode on the Pi.
+ * My deployment expects you to have an Arduino with a Kegboard to hook up the flow and temp sensors, though you may be successful hooking flow sensors directly up to a Pi.
+ * Hardware and parts I use:
+   * Raspberry Pi 3 B+
+   * 7" LCD touch screen with Pi mount to show the web UI in Kiosk mode
+   * Arduino Uno with a Kegboard shield, and Kegboard Coaster
+   * 2x Swissflow SF-800 flow sensors (I have 2 taps) and 4x John Guest 3/8" Stem OD x 1/4" Hose OD Tube to Hose Stem adapters
+   * 1x DS18B20 temperature sensor
+   * 3D printed case for the Arduino Uno with Kegboard header
+
+Make sure to use the images from all these repos, as they have several UI changes and stability improvements:
+ * [Kegboard](https://github.com/flangelo/kegboard): Firmware and schematics for the Kegbot controller board.
+ * [Kegbot-Server](https://github.com/flangelo/kegbot-server): Kegbot main web application and web UI.
+ * [Kegbot-Server](https://github.com/flangelo/kegbot-pycore): Kegbot core application which allows for communication with the Kegboard interface.
+
 ## What can it do?
 
 * **Keg Volume Monitor.** Want to know what's left?  With a little extra
