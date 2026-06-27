@@ -17,7 +17,7 @@ I have made some changes and improvements to the services which includes:
 Make sure to use the images from all these repos, as they have several UI changes and stability improvements:
  * [Kegboard](https://github.com/flangelo/kegboard): Firmware and schematics for the Kegbot controller board.
  * [Kegbot-Server](https://github.com/flangelo/kegbot-server): Kegbot main web application and web UI.
- * [Kegbot-Server](https://github.com/flangelo/kegbot-pycore): Kegbot core application which allows for communication with the Kegboard interface.
+ * [Kegbot-Pycore](https://github.com/flangelo/kegbot-pycore): Kegbot core application which allows for communication with the Kegboard interface.
 
 ## What can it do?
 
